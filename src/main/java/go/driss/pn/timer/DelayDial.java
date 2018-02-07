@@ -129,10 +129,6 @@ public class DelayDial {
 				
 				Slot slot = loop[currentIndex];
 				handle(slot);
-				currentIndex++;
-				if (currentIndex >= secondsPerLoop) {
-					currentIndex = 0;
-				}
 				
 				// 一般为 0~1毫秒
 				logger.info("dial cost:[{}]", System.currentTimeMillis() - start);
@@ -140,6 +136,11 @@ public class DelayDial {
 				try {
 					Thread.sleep(1000);
 				} catch (InterruptedException e) {}
+				
+				currentIndex++;
+				if (currentIndex >= secondsPerLoop) {
+					currentIndex = 0;
+				}
 			}
 		}, "dial-thread");
 		dialThread.start();
