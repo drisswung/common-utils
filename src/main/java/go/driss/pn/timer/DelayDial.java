@@ -16,9 +16,6 @@ import org.slf4j.LoggerFactory;
 /**
  * 延时轮盘
  * @author yiyun_wang
- *
- * @param <T>
- * @param <R>
  */
 public class DelayDial {
 	
@@ -26,7 +23,7 @@ public class DelayDial {
 
 	private int secondsPerLoop;
 	
-	private Node[] loop;
+	private Slot[] loop;
 	
 	private int currentIndex;
 	
@@ -36,6 +33,10 @@ public class DelayDial {
 	
 	private AtomicBoolean shutDown = new AtomicBoolean(false);
 	
+	/**
+	 * @param secondsPerLoop 多少秒一圈
+	 * @param workerThreads 工作线程数
+	 */
 	public DelayDial(int secondsPerLoop, int workerThreads) {
 		
 		if (secondsPerLoop <= 0) {
@@ -52,21 +53,21 @@ public class DelayDial {
 			throw new RuntimeException("delay dial already have be shuted down.");
 		}
 		int circle = delaySeconds / secondsPerLoop;
-		int slot = currentIndex + (delaySeconds - circle * secondsPerLoop);
-		if (slot >= secondsPerLoop) {
-			slot = slot - secondsPerLoop;
+		int slotIndex = currentIndex + (delaySeconds - circle * secondsPerLoop);
+		if (slotIndex >= secondsPerLoop) {
+			slotIndex = slotIndex - secondsPerLoop;
 		}
 		Task task = new Task(circle, runnable);
-		Node node = loop[slot];
-		node.queue.add(task);
+		Slot slot = loop[slotIndex];
+		slot.queue.add(task);
 		
 	}
 	
 	public void shutDown() {
 		
 		shutDown.set(true);
-		for (Node node : loop) {
-			if (node.queue.isEmpty()) {
+		for (Slot slot : loop) {
+			if (slot.queue.isEmpty()) {
 				continue;
 			}
 		}
@@ -89,9 +90,6 @@ public class DelayDial {
 		
 		DelayDial delayDial = new DelayDial(60, 4);
 		long start = System.currentTimeMillis();
-		delayDial.commitTask(6, () -> {
-			System.out.println((System.currentTimeMillis() - start) / 1000);
-		});
 		delayDial.commitTask(7, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
 		delayDial.commitTask(8, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
 		delayDial.commitTask(23, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
@@ -101,9 +99,9 @@ public class DelayDial {
 
 	private void init(int workerThreads) {
 		
-		this.loop = new Node[this.secondsPerLoop];
+		this.loop = new Slot[this.secondsPerLoop];
 		for (int i = 0; i < this.secondsPerLoop; i++) {
-			loop[i] = new Node(i);
+			loop[i] = new Slot(i);
 			if (i == 0) continue;
 			
 			loop[i].prefix = loop[i - 1];
@@ -129,8 +127,8 @@ public class DelayDial {
 				
 				long start = System.currentTimeMillis();
 				
-				Node node = loop[currentIndex];
-				handle(node);
+				Slot slot = loop[currentIndex];
+				handle(slot);
 				currentIndex++;
 				if (currentIndex >= secondsPerLoop) {
 					currentIndex = 0;
@@ -147,28 +145,28 @@ public class DelayDial {
 		dialThread.start();
 	}
 	
-	private void handle(Node node) {
-		NodeProcessor processor = new NodeProcessor(node, workers);
+	private void handle(Slot slot) {
+		SlotProcessor processor = new SlotProcessor(slot, workers);
 		workers.submit(processor);
 	}
 	
-	static class NodeProcessor implements Runnable {
+	static class SlotProcessor implements Runnable {
 		
-		private Node node;
+		private Slot slot;
 		private ExecutorService executorService;
 		
-		public NodeProcessor(Node node, ExecutorService executorService) {
-			this.node = node;
+		public SlotProcessor(Slot slot, ExecutorService executorService) {
+			this.slot = slot;
 			this.executorService = executorService;
 		}
 
 		@Override
 		public void run() {
-			if (node == null) return;
+			if (slot == null) return;
 			
 			long start = System.currentTimeMillis();
 			
-			Queue<Task> queue = node.queue;
+			Queue<Task> queue = slot.queue;
 			Iterator<Task> iterator = queue.iterator();
 			while (iterator.hasNext()) {
 				Task task = iterator.next();
@@ -198,24 +196,24 @@ public class DelayDial {
 		}
 	}
 	
-	private static class Node {
+	static class Slot {
 		
-		int no;
+		private int no;
 		
-		Node prefix;
+		private Slot prefix;
 		
-		Node next;
+		private Slot next;
 
 		private Queue<Task> queue = new LinkedBlockingQueue<>();
 
-		public Node(int no) {
+		public Slot(int no) {
 			super();
 			this.no = no;
 		}
 		
 		@Override
 		public String toString() {
-			return "Node [no=" + no + ", prefix=" + prefix.no + ", next=" + next.no + "]";
+			return "Slot [no=" + no + ", prefix=" + prefix.no + ", next=" + next.no + "]";
 		}
 	}
 	
