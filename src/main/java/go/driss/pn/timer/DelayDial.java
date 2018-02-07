@@ -63,40 +63,12 @@ public class DelayDial {
 		
 	}
 	
-	public void shutDown() {
-		
-		shutDown.set(true);
-		for (Slot slot : loop) {
-			if (slot.queue.isEmpty()) {
-				continue;
-			}
-		}
-		this.workers.shutdown();
-		try {
-			while (!this.workers.awaitTermination(1, TimeUnit.SECONDS)) {
-				continue;
-			}
-		} catch (InterruptedException e) {}
-	}
-	
 	public void shutDownNow() {
 		
 		shutDown.set(true);
 		this.workers.shutdownNow();
 	}
 	
-	public static void main(String[] args) throws Exception {
-		
-		
-		DelayDial delayDial = new DelayDial(60, 4);
-		long start = System.currentTimeMillis();
-		delayDial.commitTask(7, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
-		delayDial.commitTask(8, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
-		delayDial.commitTask(23, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
-		delayDial.commitTask(67, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
-		delayDial.commitTask(129, () -> System.out.println((System.currentTimeMillis() - start) / 1000));
-	}
-
 	private void init(int workerThreads) {
 		
 		this.loop = new Slot[this.secondsPerLoop];
@@ -113,7 +85,7 @@ public class DelayDial {
 			}
 		}
 		currentIndex = 0;
-		this.workers = new ThreadPoolExecutor(0, workerThreads, 5, TimeUnit.MINUTES, 
+		this.workers = new ThreadPoolExecutor(workerThreads, workerThreads, 0, TimeUnit.SECONDS, 
 											  new LinkedBlockingQueue<Runnable>(),
 											  new DelayDialThreadFactory(),
 											  new ThreadPoolExecutor.AbortPolicy());
