@@ -44,7 +44,6 @@ public class DelayDial {
 		}
 		this.secondsPerLoop = secondsPerLoop;
 		init(workerThreads);
-		start();
 	}
 	
 	public void commitTask(int delaySeconds, Runnable runnable) {
@@ -92,7 +91,7 @@ public class DelayDial {
 		logger.info("init delaydial, size of workers:[{}]", workerThreads);
 	}
 	
-	private void start() {
+	public void start() {
 		
 		dialThread = new Thread(() -> {
 			while (!shutDown.get()) {
