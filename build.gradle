@@ -18,7 +18,11 @@ dependencies {
 		"ch.qos.logback:logback-core:1.2.3",
 		"ch.qos.logback:logback-classic:1.2.3",
 		
-		"junit:junit:4.11"
+		"junit:junit:4.11",
+		
+		"org.apache.httpcomponents:httpclient:4.3.5",
+        "org.apache.httpcomponents:httpcore:4.3.2",
+        "org.apache.httpcomponents:httpmime:4.3.5"
 	)
 	
 }
